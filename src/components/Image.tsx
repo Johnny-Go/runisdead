@@ -1,10 +1,6 @@
-interface ImageComponentProps {
-  src: string;
+export const Image = ({ alt, src }: {
   alt: string;
-}
-
-function Image({ src, alt }: ImageComponentProps) {
+  src: string
+}) => {
   return <img src={src} alt={alt} />;
-}
-
-export default Image;
+};
