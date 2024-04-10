@@ -4,13 +4,28 @@ import viteLogo from "/vite.svg";
 import "./App.css";
 import runisdead from "./assets/runisdead.png";
 import { Image } from "./components/Image";
+import { SearchBar } from "./components/SearchBar";
 
 function App() {
   const [count, setCount] = useState(0);
 
+  const handleSearch = (value: string) => {
+    console.log("search: " + value);
+    //fetch(`https://www.speedrun.com/api/v1/users/${value}/personal-bests`)
+    //  .then((response) => response.json())
+    //  .then((json) => {
+    //    console.log(json);
+    //  });
+  };
+
   return (
     <>
-      <Image src={runisdead} alt="Run is dead" />
+      <div>
+        <Image src={runisdead} alt="Run is dead" />
+      </div>
+      <div>
+        <SearchBar id="search-field" inputLabel="Search for user" searchFunction={handleSearch}/>
+      </div>
       <div>
         <a href="https://vitejs.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
