@@ -1,4 +1,4 @@
-import {KeyboardEvent, useState} from "react"
+import { KeyboardEvent, useState } from "react";
 
 import Box from "@mui/material/Box";
 import FormControl from "@mui/material/FormControl";
@@ -11,7 +11,7 @@ import { IconButton } from "@mui/material";
 export const SearchBar = ({ id, inputLabel, searchFunction }: {
   id: string;
   inputLabel: string;
-  searchFunction: (a: string) => void;
+  searchFunction: (searchString: string) => void;
 }) => {
   const [input, setInput] = useState("");
 
@@ -19,32 +19,26 @@ export const SearchBar = ({ id, inputLabel, searchFunction }: {
     if (e.key === "Enter") {
       searchFunction(input);
     }
-  }
+  };
 
   return (
     <Box>
       <div>
-        <FormControl
-          sx={{ m: 1, width: '25ch' }} 
-          variant="outlined"
-        >
+        <FormControl sx={{ m: 1, width: "40ch" }} variant="outlined">
           <InputLabel htmlFor={id}>{inputLabel}</InputLabel>
           <OutlinedInput
             id={id}
             endAdornment={
               <InputAdornment position="end">
-                <IconButton
-                  onClick={() => searchFunction(input)}
-                  edge="end"
-                >
+                <IconButton edge="end" onClick={() => searchFunction(input)}>
                   <SearchIcon />
                 </IconButton>
               </InputAdornment>
             }
             value={input}
+            label={inputLabel}
             onChange={(e) => setInput(e.target.value)}
             onKeyUp={(e) => handleKeyPress(e)}
-            label={inputLabel}
           />
         </FormControl>
       </div>

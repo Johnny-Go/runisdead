@@ -9,22 +9,30 @@ import { SearchBar } from "./components/SearchBar";
 function App() {
   const [count, setCount] = useState(0);
 
-  const handleSearch = (value: string) => {
-    console.log("search: " + value);
-    //fetch(`https://www.speedrun.com/api/v1/users/${value}/personal-bests`)
-    //  .then((response) => response.json())
-    //  .then((json) => {
-    //    console.log(json);
-    //  });
+  const doSearch = (searchString: string) => {
+    console.log("search: " + searchString);
+    fetch(`https://www.speedrun.com/api/v1/users/${searchString}`)
+      .then((response) => response.json())
+      .then((json) => {
+        const user: string = json.data.id;
+        return user;
+      })
+      .then((userId) => {
+        console.log(userId);
+      });
   };
 
   return (
     <>
-      <div>
+      <div className="imagePadding">
         <Image src={runisdead} alt="Run is dead" />
       </div>
       <div>
-        <SearchBar id="search-field" inputLabel="Search for user" searchFunction={handleSearch}/>
+        <SearchBar
+          id="search-field"
+          inputLabel="Search for Speedrun.com user"
+          searchFunction={doSearch}
+        />
       </div>
       <div>
         <a href="https://vitejs.dev" target="_blank">
