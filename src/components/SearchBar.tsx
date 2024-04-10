@@ -1,4 +1,4 @@
-import { KeyboardEvent, useState } from "react";
+import { useId, KeyboardEvent, useState, ComponentProps } from "react";
 
 import Box from "@mui/material/Box";
 import FormControl from "@mui/material/FormControl";
@@ -8,35 +8,29 @@ import InputAdornment from "@mui/material/InputAdornment";
 import SearchIcon from "@mui/icons-material/Search";
 import { IconButton } from "@mui/material";
 
-export const SearchBar = ({ id, inputLabel, searchFunction }: {
-  id: string;
-  inputLabel: string;
-  searchFunction: (searchString: string) => void;
+export const SearchBar = (props: {
+  label: string;
+  onSearch: (searchString: string) => void;
 }) => {
-  const [input, setInput] = useState("");
-
-  const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      searchFunction(input);
-    }
-  };
+  const { label, onSearch } = props;
+  const { handleKeyPress, input, setInput, id } = useStateForSearchBar(props);
 
   return (
     <Box>
       <div>
         <FormControl sx={{ m: 1, width: "40ch" }} variant="outlined">
-          <InputLabel htmlFor={id}>{inputLabel}</InputLabel>
+          <InputLabel htmlFor={id}>{label}</InputLabel>
           <OutlinedInput
             id={id}
             endAdornment={
               <InputAdornment position="end">
-                <IconButton edge="end" onClick={() => searchFunction(input)}>
+                <IconButton edge="end" onClick={() => onSearch(input)}>
                   <SearchIcon />
                 </IconButton>
               </InputAdornment>
             }
             value={input}
-            label={inputLabel}
+            label={label}
             onChange={(e) => setInput(e.target.value)}
             onKeyUp={(e) => handleKeyPress(e)}
           />
@@ -44,4 +38,22 @@ export const SearchBar = ({ id, inputLabel, searchFunction }: {
       </div>
     </Box>
   );
+};
+
+const useStateForSearchBar = ({ onSearch }: ComponentProps<typeof SearchBar>) => {
+  const [input, setInput] = useState("");
+  const id = useId();
+
+  const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      onSearch(input);
+    }
+  };
+
+  return {
+    input,
+    setInput,
+    id,
+    handleKeyPress
+  };
 };
