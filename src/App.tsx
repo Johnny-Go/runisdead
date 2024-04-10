@@ -4,7 +4,7 @@ import "./App.css";
 import runisdead from "./assets/runisdead.png";
 import { Image } from "./components/Image";
 import { SearchBar } from "./components/SearchBar";
-import { remote } from "./remote.ts"
+import { remote } from "./remote.ts";
 
 export const App = () => {
   const { handleSearch, userId } = useStateForApp();
@@ -23,18 +23,22 @@ export const App = () => {
       </div>
     </>
   );
-}
+};
 
 const useStateForApp = () => {
   const [userId, setUserId] = useState<string>();
 
   const handleSearch = useCallback(async (searchString: string) => {
     const user = await remote.speedrun.getUser(searchString);
-    setUserId(user.data.id);
-  },[]);
+    if (user.data.id) {
+      setUserId(user.data.id);
+      const runs = await remote.speedrun.getUserPersonalBests(user.data.id);
+      console.log(runs);
+    }
+  }, []);
 
   return useMemo(() => ({
     handleSearch,
     userId
-  }),[handleSearch, userId]);
+  }), [handleSearch, userId]);
 };

@@ -4,20 +4,23 @@ export type UserViewModel = {
   };
 };
 
-export type RunsViewModel = {
-  data: {
-    id: string;
-  }
+export type PersonalBestsViewModel = {
+  data: Array<PersonalBestViewModel>;
 };
 
+export type PersonalBestViewModel = {
+  place: number;
+}
+
 export const remote = {
+  /* https://github.com/speedruncomorg/api/tree/master/version1 */
   speedrun: {
-    getUser: async (userName: string) => {
+    getUser: async (userName: string) => { /* https://github.com/speedruncomorg/api/blob/master/version1/users.md#get-usersid */
       const response = await get<UserViewModel>(`https://www.speedrun.com/api/v1/users/${userName}`);
       return response;
     },
-    getUserRuns: async (userId: string) => {
-      const response = await get<RunsViewModel>(`https://www.speedrun.com/api/v1/runs?user=${userId}}`)
+    getUserPersonalBests: async (userName: string) => { /* https://github.com/speedruncomorg/api/blob/master/version1/users.md#get-usersidpersonal-bests */
+      const response = await get<PersonalBestsViewModel>(`https://www.speedrun.com/api/v1/users/${userName}/personal-bests?embed=game,category.variables`)
       return response;
     }
   }
