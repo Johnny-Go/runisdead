@@ -1,15 +1,64 @@
-export type UserViewModel = {
+type UserViewModel = {
   data: {
     id: string;
   };
 };
 
-export type PersonalBestsViewModel = {
-  data: Array<PersonalBestViewModel>;
+type PersonalBestsViewModel = {
+  data: PersonalBestViewModel[];
 };
 
 export type PersonalBestViewModel = {
   place: number;
+  run: {
+    id: string;
+    weblink: string;
+    game: string;
+    category: string;
+    times: {
+      primary: string;
+      primary_t: number;
+      realtime: string;
+      realtime_t: number;
+      realtime_noloads: string;
+      realtime_noloads_t: number;
+      ingame: string;
+      ingame_t: number;
+    };
+    values: object;
+  };
+  game: {
+    data: {
+      id: string;
+      names: {
+        international: string;
+        japanese: string;
+        twitch: string;
+      };
+      weblink: string;
+    };
+  };
+  category: {
+    data: CategoryDataViewModel
+  };
+};
+
+export type CategoryDataViewModel = {
+  id: string;
+  name: string;
+  variables: {
+    data: [
+      {
+        id: string;
+        name: string;
+        mandatory: boolean;
+        values: {
+          values: object //for the love of god why isn't this an array?
+        };
+        "is-subcategory": boolean;
+      }
+    ];
+  };
 }
 
 export const remote = {
@@ -21,7 +70,7 @@ export const remote = {
     },
     getUserPersonalBests: async (userName: string) => { /* https://github.com/speedruncomorg/api/blob/master/version1/users.md#get-usersidpersonal-bests */
       const response = await get<PersonalBestsViewModel>(`https://www.speedrun.com/api/v1/users/${userName}/personal-bests?embed=game,category.variables`)
-      return response;
+      return response.data;
     }
   }
 };

@@ -6,13 +6,12 @@ import InputLabel from "@mui/material/InputLabel";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import InputAdornment from "@mui/material/InputAdornment";
 import SearchIcon from "@mui/icons-material/Search";
-import { IconButton } from "@mui/material";
+import IconButton from "@mui/material/IconButton";
 
 export const SearchBar = (props: {
   label: string;
   onSearch: (searchString: string) => void;
   sx?: ComponentProps<typeof FormControl>["sx"];
-  variant?: ComponentProps<typeof FormControl>["variant"];
 }) => {
   const { label, onSearch } = props;
   const { handleKeyPress, input, setInput, id } = useStateForSearchBar(props);
@@ -20,10 +19,7 @@ export const SearchBar = (props: {
   return (
     <Box>
       <div>
-        <FormControl
-          sx={{ m: 1, width: "40ch", ...props.sx }}
-          variant={props.variant ?? "outlined"}
-        >
+        <FormControl sx={{ m: 1, width: "40ch", ...props.sx }} variant="outlined">
           <InputLabel htmlFor={id}>{label}</InputLabel>
           <OutlinedInput
             id={id}
