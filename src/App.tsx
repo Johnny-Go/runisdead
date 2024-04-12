@@ -20,8 +20,8 @@ export const App = () => {
           label="Search for Speedrun.com user"
           onSearch={handleSearch}
         />
-        <div>My id is: {userId}</div>
-        <div>Number of Games: {runData?.games?.length}</div>
+        <div>Runner id is: {userId}</div>
+        <div>Number of games run: {runData?.games?.length}</div>
       </div>
       <div>
         <RunDisplay runData={runData} />

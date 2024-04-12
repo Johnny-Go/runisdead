@@ -1,19 +1,19 @@
 import React, { useState } from "react";
 
 import { CategoryViewModel, RunDataViewModel, RunViewModel, SubcategoryValueViewModel, SubcategoryViewModel } from "../App";
-import TableContainer from "@mui/material/TableContainer";
-import Paper from "@mui/material/Paper";
-import Table from "@mui/material/Table";
-import TableHead from '@mui/material/TableHead';
-import TableBody from "@mui/material/TableBody";
-import TableRow from "@mui/material/TableRow";
-import TableCell from "@mui/material/TableCell";
-import IconButton from "@mui/material/IconButton";
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
+import IconButton from "@mui/material/IconButton";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from '@mui/material/TableHead';
+import TableRow from "@mui/material/TableRow";
 import Typography from '@mui/material/Typography';
+import Paper from "@mui/material/Paper";
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 
 export const RunDisplay = ({ runData }: {
     runData?: RunDataViewModel;
@@ -60,11 +60,11 @@ const CategoryRow = ({ name, runs, categories, subcategories }: {
   /* for example:
     No Subcategories:   MMX: Any%; 100%; etc
     One Subcategory:    GCM: Any% + Easy; Co-op + Easy; etc
-    Two Subcategories:  MBA: Phase 10 + 2 Players, Arcade; Phase 15 + 2 Players, Arcade; etc\
+    Two Subcategories:  MBA: Phase 10 + 2 Players, Arcade; Phase 15 + 2 Players, Arcade; etc
     etc
   */
 
-  const rowData:RowData[] = [];
+  const rowDataMap = new Map<string, RowData>();
   runs.forEach((run) => {
     const category = categories.get(run.categoryId);
     const subcategoryValueList: SubcategoryValueViewModel[] = [];
@@ -77,19 +77,33 @@ const CategoryRow = ({ name, runs, categories, subcategories }: {
       }
     });
 
-    rowData.push({
+    const subcategoryValueIds = subcategoryValueList?.map((s) => s.subcategoryValueId).join()
+    const rowData: RowData = {
+      runId: run.runId,
+      place: run.place,
       time: run.times.primaryTime,
       categoryId: category?.categoryId ?? "",
       categoryName: category?.categoryName ?? "",
-      subcategoryValueIds: subcategoryValueList?.map((s) => s.subcategoryValueId).join(),
+      subcategoryValueIds: subcategoryValueIds,
       subcategoryValueNames: subcategoryValueList?.map((s) => s.subcategoryValueName).join(", ")
-    });
+    };
+
+    //some code to filter out older runs because the /personal-bests endpoint includes old runs sometimes
+    const checkId = category?.categoryId + "," + subcategoryValueList?.map((s) => s.subcategoryValueId).join();
+    const checkRowData = rowDataMap.get(checkId);
+    if(checkRowData) {
+      if(rowData.time > checkRowData.time) {
+        return;
+      }
+    }
+    rowDataMap.set(checkId, rowData);
   });
+  const sortedRowData = Array.from(rowDataMap.values()).sort((a,b) => a.categoryName.localeCompare(b.categoryName) || a.subcategoryValueNames.localeCompare(b.subcategoryValueNames));
 
   return (
     <React.Fragment>
-      <TableRow sx={{ '& > *': { borderBottom: 'unset' } }}>
-        <TableCell>
+      <TableRow sx={{ '& > *': { borderBottom: 'unset' } }} >
+        <TableCell sx={{ borderBottom: "none" }}>
           <IconButton
             aria-label="expand row"
             size="small"
@@ -98,8 +112,8 @@ const CategoryRow = ({ name, runs, categories, subcategories }: {
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell component="th" scope="row">{name}</TableCell>
-        <TableCell align="right">{runs.length}</TableCell>
+        <TableCell sx={{ borderBottom: "none" }} component="th" scope="row">{name}</TableCell>
+        <TableCell sx={{ borderBottom: "none" }} align="right">{sortedRowData.length}</TableCell>
       </TableRow>
       <TableRow>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
@@ -113,13 +127,15 @@ const CategoryRow = ({ name, runs, categories, subcategories }: {
                   <TableRow>
                     <TableCell>Category</TableCell>
                     <TableCell align="right">Time</TableCell>
+                    <TableCell align="right">Place</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rowData.map((row) => (
-                    <TableRow key={`${row.categoryId},${row.subcategoryValueIds}`}>
+                  {sortedRowData.map((row) => (
+                    <TableRow key={`${row.runId}`}>
                       <TableCell component="th" scope="row">{`${row.categoryName}${row.subcategoryValueNames ? ": " + row.subcategoryValueNames : ""}`}</TableCell>
                       <TableCell align="right">{convertSecondsToTime(row.time)}</TableCell>
+                      <TableCell align="right">{row.place}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -133,6 +149,8 @@ const CategoryRow = ({ name, runs, categories, subcategories }: {
 };
 
 type RowData = {
+  runId: string;
+  place: number;
   time: number;
   categoryId: string;
   categoryName: string;
@@ -154,9 +172,9 @@ const convertSecondsToTime = (numSeconds: number): string => {
 
   return [
     d > 0 ? `${d}d` : [],
-    h > 0 ? `${h}h` : [],
-    m > 0 ? `${m}m` : [],
-    s > 0 ? `${s}s` : [],
+    h > 0 ? `${h}h` : (d > 0) && h === 0 ? "0h" : [],
+    m > 0 ? `${m}m` : (d > 0 || h > 0) && m === 0 ? "0m" : [],
+    s > 0 ? `${s}s` : (d > 0 || h > 0 || m > 0) && s === 0 ? "0s" : [],
     ms > 0 ? `${ms}ms` : [],
   ].join(" ");
 };
