@@ -14,38 +14,50 @@ import Typography from '@mui/material/Typography';
 import Paper from "@mui/material/Paper";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import CircularProgress from '@mui/material/CircularProgress';
 
-export const RunDisplay = ({ runData }: {
+export const RunDisplay = ({ runData, loading }: {
     runData?: RunDataViewModel;
+    loading: boolean;
 }) => {
-  if(runData) {
-    return (
-      <TableContainer component={Paper} style={{ maxHeight: "75vh" }}>
-        <Table stickyHeader aria-label="collapsible table" >
-          <TableHead>
-            <TableRow>
-              <TableCell />
-              <TableCell>Game</TableCell>
-              <TableCell align="right">Categories Run</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {runData.games.map((game) => (
-              <CategoryRow 
-                key={game.gameId}
-                name={game.gameName}
-                runs={runData.runsByGameId.get(game.gameId) ?? []}
-                categories={runData.categoryLookup}
-                subcategories={runData.subcategoryLookup}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    );
-  } else {
-    return null;
-  }
+  return (
+    <TableContainer component={Paper} sx={{ maxHeight: "75vh", minHeight: "10vh" }}>
+      <Table stickyHeader size="small" aria-label="collapsible table" sx={{ minWidth: 650 }}>
+        <TableHead>
+          <TableRow>
+            <TableCell />
+            <TableCell align="left">Game</TableCell>
+            <TableCell align="right">Categories Run</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {
+            (loading)
+            ? <TableRow sx={{ "& > *": { borderBottom: "unset" }, "&:last-child td, &:last-child th": { border: 0 } }}>
+                <TableCell align="center" colSpan={3}>
+                  <CircularProgress />
+                </TableCell>
+              </TableRow>
+            : (runData && runData.games.length > 0)
+              ?
+                runData.games.map((game) => (
+                  <CategoryRow 
+                    key={game.gameId}
+                    name={game.gameName}
+                    runs={runData.runsByGameId.get(game.gameId) ?? []}
+                    categories={runData.categoryLookup}
+                    subcategories={runData.subcategoryLookup}
+                  />
+              ))
+              :
+                <TableRow sx={{ "& > *": { borderBottom: "unset" }, "&:last-child td, &:last-child th": { border: 0 } }}>
+                  <TableCell align="center" colSpan={3}>No data to display</TableCell>
+                </TableRow>
+          }
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
 };
 
 const CategoryRow = ({ name, runs, categories, subcategories }: {
@@ -102,7 +114,7 @@ const CategoryRow = ({ name, runs, categories, subcategories }: {
 
   return (
     <React.Fragment>
-      <TableRow sx={{ '& > *': { borderBottom: 'unset' } }} >
+      <TableRow sx={{ "& > *": { borderBottom: "unset" }, "&:last-child td, &:last-child th": { border: 0 } }} >
         <TableCell sx={{ borderBottom: "none" }}>
           <IconButton
             aria-label="expand row"
@@ -112,11 +124,11 @@ const CategoryRow = ({ name, runs, categories, subcategories }: {
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell sx={{ borderBottom: "none" }} component="th" scope="row">{name}</TableCell>
+        <TableCell sx={{ borderBottom: "none" }} align="left" component="th" scope="row">{name}</TableCell>
         <TableCell sx={{ borderBottom: "none" }} align="right">{sortedRowData.length}</TableCell>
       </TableRow>
       <TableRow>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={3}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 1 }}>
               <Typography variant="h6" gutterBottom component="div">
@@ -132,7 +144,7 @@ const CategoryRow = ({ name, runs, categories, subcategories }: {
                 </TableHead>
                 <TableBody>
                   {sortedRowData.map((row) => (
-                    <TableRow key={`${row.runId}`}>
+                    <TableRow key={`${row.runId}`} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
                       <TableCell component="th" scope="row">{`${row.categoryName}${row.subcategoryValueNames ? ": " + row.subcategoryValueNames : ""}`}</TableCell>
                       <TableCell align="right">{convertSecondsToTime(row.time)}</TableCell>
                       <TableCell align="right">{row.place}</TableCell>

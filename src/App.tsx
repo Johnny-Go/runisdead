@@ -8,7 +8,7 @@ import { RunDisplay } from "./components/RunDisplay.tsx";
 import { remote, PersonalBestViewModel } from "./remote.ts";
 
 export const App = () => {
-  const { handleSearch, userId, runData } = useStateForApp();
+  const { handleSearch, userId, runData, loading } = useStateForApp();
 
   return (
     <>
@@ -24,7 +24,7 @@ export const App = () => {
         <div>Number of games run: {runData?.games?.length}</div>
       </div>
       <div>
-        <RunDisplay runData={runData} />
+        <RunDisplay runData={runData} loading={loading}/>
       </div>
     </>
   );
@@ -33,8 +33,10 @@ export const App = () => {
 const useStateForApp = () => {
   const [userId, setUserId] = useState<string>();
   const [runData, setRunData] = useState<RunDataViewModel>();
+  const [loading, setLoading] = useState(false);
 
   const handleSearch = useCallback(async (searchString: string) => {
+    setLoading(true);
     const user = await remote.speedrun.getUser(searchString);
     const userId = user?.data?.id;
 
@@ -42,9 +44,9 @@ const useStateForApp = () => {
       setUserId(userId);
       const pbs = await remote.speedrun.getUserPersonalBests(userId);
       const mappedRunData = mapData(pbs, userId);
-      console.log(mappedRunData);
       setRunData(mappedRunData);
     }
+    setLoading(false);
   }, []);
 
   const mapData = (
@@ -150,7 +152,8 @@ const useStateForApp = () => {
     handleSearch,
     userId,
     runData,
-  }), [handleSearch, userId, runData]);
+    loading,
+  }), [handleSearch, userId, runData, loading]);
 };
 
 export type RunDataViewModel = {
