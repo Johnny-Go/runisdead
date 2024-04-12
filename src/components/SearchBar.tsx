@@ -55,6 +55,6 @@ const useStateForSearchBar = ({ onSearch }: ComponentProps<typeof SearchBar>) =>
     input,
     setInput,
     id,
-    handleKeyPress
+    handleKeyPress,
   };
 };

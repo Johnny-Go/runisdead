@@ -1,3 +1,23 @@
+export const remote = {
+  /* https://github.com/speedruncomorg/api/tree/master/version1 */
+  speedrun: {
+    getUser: async (userName: string) => { /* https://github.com/speedruncomorg/api/blob/master/version1/users.md#get-usersid */
+      const response = await get<UserViewModel>(`https://www.speedrun.com/api/v1/users/${userName}`);
+      return response;
+    },
+    getUserPersonalBests: async (userName: string) => { /* https://github.com/speedruncomorg/api/blob/master/version1/users.md#get-usersidpersonal-bests */
+      const response = await get<PersonalBestsViewModel>(`https://www.speedrun.com/api/v1/users/${userName}/personal-bests?embed=game,category.variables`);
+      return response.data;
+    },
+  }
+};
+
+const get = async <TModel extends object>(url: string) => {
+  const response = await fetch(url);
+  const json = await response.json();
+  return json as TModel;
+};
+
 type UserViewModel = {
   data: {
     id: string;
@@ -14,6 +34,7 @@ export type PersonalBestViewModel = {
     id: string;
     weblink: string;
     game: string;
+    level: string;
     category: string;
     times: {
       primary: string;
@@ -25,7 +46,7 @@ export type PersonalBestViewModel = {
       ingame: string;
       ingame_t: number;
     };
-    values: object;
+    values: object; //for the love of god why isn't this an array?
   };
   game: {
     data: {
@@ -39,44 +60,22 @@ export type PersonalBestViewModel = {
     };
   };
   category: {
-    data: CategoryDataViewModel
+    data: {
+      id: string;
+      name: string;
+      variables: {
+        data: [
+          {
+            id: string;
+            name: string;
+            mandatory: boolean;
+            values: {
+              values: object; //for the love of god why isn't this an array?
+            };
+            "is-subcategory": boolean;
+          }
+        ];
+      };
+    };
   };
-};
-
-export type CategoryDataViewModel = {
-  id: string;
-  name: string;
-  variables: {
-    data: [
-      {
-        id: string;
-        name: string;
-        mandatory: boolean;
-        values: {
-          values: object //for the love of god why isn't this an array?
-        };
-        "is-subcategory": boolean;
-      }
-    ];
-  };
-}
-
-export const remote = {
-  /* https://github.com/speedruncomorg/api/tree/master/version1 */
-  speedrun: {
-    getUser: async (userName: string) => { /* https://github.com/speedruncomorg/api/blob/master/version1/users.md#get-usersid */
-      const response = await get<UserViewModel>(`https://www.speedrun.com/api/v1/users/${userName}`);
-      return response;
-    },
-    getUserPersonalBests: async (userName: string) => { /* https://github.com/speedruncomorg/api/blob/master/version1/users.md#get-usersidpersonal-bests */
-      const response = await get<PersonalBestsViewModel>(`https://www.speedrun.com/api/v1/users/${userName}/personal-bests?embed=game,category.variables`)
-      return response.data;
-    }
-  }
-};
-
-const get = async <TModel extends object>(url: string) => {
-  const response = await fetch(url);
-  const json = await response.json();
-  return json as TModel;
 };

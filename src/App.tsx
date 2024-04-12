@@ -24,7 +24,7 @@ export const App = () => {
         <div>Number of Games: {runData?.games?.length}</div>
       </div>
       <div>
-        <RunDisplay runData={runData}/>
+        <RunDisplay runData={runData} />
       </div>
     </>
   );
@@ -47,33 +47,35 @@ const useStateForApp = () => {
     }
   }, []);
 
-  const mapData = (personalBests: PersonalBestViewModel[], userIdParam: string): RunDataViewModel => {
+  const mapData = (
+    personalBests: PersonalBestViewModel[],
+    userIdParam: string
+  ): RunDataViewModel => {
     const mappedGamesByGameId = new Map<string, GameViewModel>();
     const mappedRunsByGameId = new Map<string, RunViewModel[]>();
-    const mappedCategoriesByGameId = new Map<string, Map<string, CategoryViewModel>>();
+    const mappedCategoriesByCategoryId = new Map<string, CategoryViewModel>();
+    const mappedSubcategoriesBySubcategoryId = new Map<string, SubcategoryViewModel>();
 
     personalBests.forEach((personalBest) => {
-      const gameId = personalBest.game.data.id;
+      //don't include ILs
+      if(personalBest.run.level) {
+        return;
+      }
+
       const gameData = personalBest.game.data;
-      const runData = personalBest.run;
+      const gameId = gameData.id;
+      const pbRunData = personalBest.run;
       const categoryData = personalBest.category.data;
+      const categoryId = categoryData.id
 
       //build map of games
       mappedGamesByGameId.set(gameId, {
         gameId: gameId,
         gameName: gameData.names.international,
-        gameUrl: gameData.weblink
+        gameUrl: gameData.weblink,
       });
 
-      //create category map for the game if it doesn't exist
-      let categoryMap = mappedCategoriesByGameId.get(gameId);
-      if (!categoryMap) {
-        categoryMap = new Map();
-        mappedCategoriesByGameId.set(gameId, categoryMap);
-      }
-
       //get subcategories for each category, as well as their values
-      const subcategoryMap = new Map<string, SubcategoryViewModel>()
       categoryData.variables.data.forEach((subcategory) => {
         if (subcategory["is-subcategory"] === true) {
           const subcategoryValuesMap = new Map<string, SubcategoryValueViewModel>();
@@ -81,16 +83,23 @@ const useStateForApp = () => {
           for (const [key, value] of Object.entries(subcategory.values.values)) {
             subcategoryValuesMap.set(key, {
               subcategoryValueId: key,
-              subcategoryName: value.label
+              subcategoryValueName: value.label,
             });
           }
 
-          subcategoryMap.set(subcategory.id, {
+          mappedSubcategoriesBySubcategoryId.set(subcategory.id, {
               subcategoryId: subcategory.id,
               subcategoryName: subcategory.name,
-              subcategoryValues: subcategoryValuesMap
+              subcategoryValues: subcategoryValuesMap,
           });
         }
+      });
+
+      //build map of categories
+      mappedCategoriesByCategoryId.set(categoryId, {
+        categoryId: categoryId,
+        categoryName: categoryData.name,
+        gameId: gameId,
       });
 
       //create a run map for the game if it doesn't exist
@@ -102,67 +111,53 @@ const useStateForApp = () => {
 
       //get the subcategories for the run
       const runSubcategories = [];
-      for (const [key, value] of Object.entries(runData.values)) {
-        if(subcategoryMap.get(key)) {
+      for (const [key, value] of Object.entries(pbRunData.values)) {
+        if (mappedSubcategoriesBySubcategoryId.get(key)) {
           runSubcategories.push({
             subcategoryId: key,
-            subcategoryValueId: value
+            subcategoryValueId: value,
           });
         }
       }
 
       runArray.push({
-        runId: runData.id,
-        gameId: runData.game,
-        categoryId: runData.category,
+        runId: pbRunData.id,
+        gameId: pbRunData.game,
+        categoryId: pbRunData.category,
         userId: userIdParam,
-        runUrl: runData.weblink,
+        runUrl: pbRunData.weblink,
         place: personalBest.place,
         times: {
-          primaryTime: runData.times.primary_t,
-          realTime: runData.times.realtime_t,
-          realTimeNoLoads: runData.times.realtime_noloads_t,
-          inGameTime: runData.times.ingame_t
+          primaryTime: pbRunData.times.primary_t,
+          realTime: pbRunData.times.realtime_t,
+          realTimeNoLoads: pbRunData.times.realtime_noloads_t,
+          inGameTime: pbRunData.times.ingame_t,
         },
-        subcategories: runSubcategories
+        subcategories: runSubcategories,
       });
-
-      //create the categories in the map
-      categoryMap.set(categoryData.id, {
-        categoryId: categoryData.id,
-        categoryName: categoryData.name,
-        gameId: gameId,
-        subcategories: subcategoryMap
-      });
-    });
-
-    //convert Map<string, Map<string, CategoryViewModel>> to Map<string, CategoryViewModel[]>
-    const convertedCategories = new Map<string, CategoryViewModel[]>();
-    mappedCategoriesByGameId.forEach((categories, game) => {
-      convertedCategories.set(game, Array.from(categories.values()).sort((a,b) => a.categoryName.localeCompare(b.categoryName)));
     });
 
     return {
       games: Array.from(mappedGamesByGameId.values()).sort((a,b) => a.gameName.localeCompare(b.gameName)),
       gameLookup: mappedGamesByGameId,
-      categoriesByGameId: convertedCategories,
-      runsByGameId: mappedRunsByGameId
+      categoryLookup: mappedCategoriesByCategoryId,
+      subcategoryLookup: mappedSubcategoriesBySubcategoryId,
+      runsByGameId: mappedRunsByGameId,
     };
   };
 
   return useMemo(() => ({
     handleSearch,
     userId,
-    runData
+    runData,
   }), [handleSearch, userId, runData]);
 };
 
 export type RunDataViewModel = {
   games: GameViewModel[];
   gameLookup: Map<string, GameViewModel>;
-  //categories: CategoryViewModel[];
-  categoriesByGameId: Map<string, CategoryViewModel[]>;
-  //runs: RunViewModel[];
+  categoryLookup: Map<string, CategoryViewModel>;
+  subcategoryLookup: Map<string, SubcategoryViewModel>;
   runsByGameId: Map<string, RunViewModel[]>;
 }
 
@@ -172,25 +167,24 @@ type GameViewModel = {
   gameUrl: string;
 };
 
-type CategoryViewModel = {
+export type CategoryViewModel = {
   categoryId: string;
   categoryName: string;
   gameId: string;
-  subcategories: Map<string, SubcategoryViewModel>
 };
 
-type SubcategoryViewModel = {
+export type SubcategoryViewModel = {
   subcategoryId: string;
   subcategoryName: string;
-  subcategoryValues: Map<string, SubcategoryValueViewModel>
+  subcategoryValues: Map<string, SubcategoryValueViewModel>;
 };
 
-type SubcategoryValueViewModel = {
+export type SubcategoryValueViewModel = {
   subcategoryValueId: string;
-  subcategoryName: string;
+  subcategoryValueName: string;
 }
 
-type RunViewModel = {
+export type RunViewModel = {
   runId: string;
   gameId: string;
   categoryId: string;
