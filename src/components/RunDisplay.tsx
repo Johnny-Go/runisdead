@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { CategoryViewModel, RunDataViewModel, RunViewModel, SubcategoryValueViewModel, SubcategoryViewModel } from "../App";
+import { CategoryViewModel, GameViewModel, RunDataViewModel, RunViewModel, SubcategoryValueViewModel, SubcategoryViewModel } from "../App";
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
 import IconButton from "@mui/material/IconButton";
@@ -16,13 +16,39 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import CircularProgress from '@mui/material/CircularProgress';
 
+const styles = {
+  tableContainer: {
+    maxHeight: "75vh",
+    minHeight: "10vh",
+  },
+  table: {
+    minWidth: 650
+  },
+  tableRow: {
+    "& > *": { borderBottom: "unset" },
+    "&:last-child td, &:last-child th": { border: 0 }
+  },
+  tableCell: {
+    noBottomBorder: {
+      borderBottom: "none"
+    },
+    noTopBottomPadding: {
+      paddingBottom: 0,
+      paddingTop: 0
+    }
+  },
+  box: {
+    margin: 1
+  },
+};
+
 export const RunDisplay = ({ runData, loading }: {
     runData?: RunDataViewModel;
     loading: boolean;
 }) => {
   return (
-    <TableContainer component={Paper} sx={{ maxHeight: "75vh", minHeight: "10vh" }}>
-      <Table stickyHeader size="small" aria-label="collapsible table" sx={{ minWidth: 650 }}>
+    <TableContainer component={Paper} sx={styles.tableContainer}>
+      <Table stickyHeader size="small" aria-label="collapsible table" sx={styles.table}>
         <TableHead>
           <TableRow>
             <TableCell />
@@ -33,7 +59,7 @@ export const RunDisplay = ({ runData, loading }: {
         <TableBody>
           {
             (loading)
-            ? <TableRow sx={{ "& > *": { borderBottom: "unset" }, "&:last-child td, &:last-child th": { border: 0 } }}>
+            ? <TableRow sx={styles.tableRow}>
                 <TableCell align="center" colSpan={3}>
                   <CircularProgress />
                 </TableCell>
@@ -43,14 +69,14 @@ export const RunDisplay = ({ runData, loading }: {
                 runData.games.map((game) => (
                   <CategoryRow 
                     key={game.gameId}
-                    name={game.gameName}
+                    game={game}
                     runs={runData.runsByGameId.get(game.gameId) ?? []}
                     categories={runData.categoryLookup}
                     subcategories={runData.subcategoryLookup}
                   />
               ))
               :
-                <TableRow sx={{ "& > *": { borderBottom: "unset" }, "&:last-child td, &:last-child th": { border: 0 } }}>
+                <TableRow sx={styles.tableRow}>
                   <TableCell align="center" colSpan={3}>No data to display</TableCell>
                 </TableRow>
           }
@@ -60,8 +86,8 @@ export const RunDisplay = ({ runData, loading }: {
   );
 };
 
-const CategoryRow = ({ name, runs, categories, subcategories }: {
-  name: string;
+const CategoryRow = ({ game, runs, categories, subcategories }: {
+  game: GameViewModel;
   runs: RunViewModel[];
   categories: Map<string, CategoryViewModel>;
   subcategories: Map<string, SubcategoryViewModel>;
@@ -92,6 +118,7 @@ const CategoryRow = ({ name, runs, categories, subcategories }: {
     const subcategoryValueIds = subcategoryValueList?.map((s) => s.subcategoryValueId).join()
     const rowData: RowData = {
       runId: run.runId,
+      runUrl: run.runUrl,
       place: run.place,
       time: run.times.primaryTime,
       categoryId: category?.categoryId ?? "",
@@ -114,8 +141,8 @@ const CategoryRow = ({ name, runs, categories, subcategories }: {
 
   return (
     <React.Fragment>
-      <TableRow sx={{ "& > *": { borderBottom: "unset" }, "&:last-child td, &:last-child th": { border: 0 } }} >
-        <TableCell sx={{ borderBottom: "none" }}>
+      <TableRow sx={styles.tableRow} >
+        <TableCell sx={styles.tableCell.noBottomBorder}>
           <IconButton
             aria-label="expand row"
             size="small"
@@ -124,13 +151,15 @@ const CategoryRow = ({ name, runs, categories, subcategories }: {
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell sx={{ borderBottom: "none" }} align="left" component="th" scope="row">{name}</TableCell>
-        <TableCell sx={{ borderBottom: "none" }} align="right">{sortedRowData.length}</TableCell>
+        <TableCell sx={styles.tableCell.noBottomBorder} align="left" component="th" scope="row">
+          <a href={game.gameUrl} target="_blank">{game.gameName}</a>
+        </TableCell>
+        <TableCell sx={styles.tableCell.noBottomBorder} align="right">{sortedRowData.length}</TableCell>
       </TableRow>
       <TableRow>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={3}>
+        <TableCell sx={styles.tableCell.noTopBottomPadding} colSpan={3}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box sx={{ margin: 1 }}>
+            <Box sx={styles.box}>
               <Typography variant="h6" gutterBottom component="div">
                 Categories
               </Typography>
@@ -144,9 +173,11 @@ const CategoryRow = ({ name, runs, categories, subcategories }: {
                 </TableHead>
                 <TableBody>
                   {sortedRowData.map((row) => (
-                    <TableRow key={`${row.runId}`} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                    <TableRow key={`${row.runId}`} sx={styles.tableRow}>
                       <TableCell component="th" scope="row">{`${row.categoryName}${row.subcategoryValueNames ? ": " + row.subcategoryValueNames : ""}`}</TableCell>
-                      <TableCell align="right">{convertSecondsToTime(row.time)}</TableCell>
+                      <TableCell align="right">
+                        <a href={row.runUrl} target="_blank">{convertSecondsToTime(row.time)}</a>
+                      </TableCell>
                       <TableCell align="right">{row.place}</TableCell>
                     </TableRow>
                   ))}
@@ -162,6 +193,7 @@ const CategoryRow = ({ name, runs, categories, subcategories }: {
 
 type RowData = {
   runId: string;
+  runUrl: string;
   place: number;
   time: number;
   categoryId: string;

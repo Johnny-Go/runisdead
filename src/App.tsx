@@ -37,6 +37,9 @@ const useStateForApp = () => {
 
   const handleSearch = useCallback(async (searchString: string) => {
     setLoading(true);
+    setUserId(undefined);
+    setRunData(undefined);
+
     const user = await remote.speedrun.getUser(searchString);
     const userId = user?.data?.id;
 
@@ -46,6 +49,7 @@ const useStateForApp = () => {
       const mappedRunData = mapData(pbs, userId);
       setRunData(mappedRunData);
     }
+
     setLoading(false);
   }, []);
 
@@ -164,7 +168,7 @@ export type RunDataViewModel = {
   runsByGameId: Map<string, RunViewModel[]>;
 }
 
-type GameViewModel = {
+export type GameViewModel = {
   gameId: string;
   gameName: string;
   gameUrl: string;
