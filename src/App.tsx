@@ -8,20 +8,18 @@ import { RunDisplay } from "./components/RunDisplay.tsx";
 import { remote, PersonalBestViewModel } from "./remote.ts";
 
 export const App = () => {
-  const { handleSearch, userId, runData, loading } = useStateForApp();
+  const { handleSearch, runData, loading } = useStateForApp();
 
   return (
     <>
-      <div className="imagePadding">
+      <div className="bottomPadding">
         <Image src={runisdead} alt="Run is dead" />
       </div>
-      <div>
+      <div className="bottomPadding">
         <SearchBar
           label="Search for Speedrun.com user"
           onSearch={handleSearch}
         />
-        <div>Runner id is: {userId}</div>
-        <div>Number of games run: {runData?.games?.length}</div>
       </div>
       <div>
         <RunDisplay runData={runData} loading={loading}/>
@@ -31,20 +29,17 @@ export const App = () => {
 };
 
 const useStateForApp = () => {
-  const [userId, setUserId] = useState<string>();
   const [runData, setRunData] = useState<RunDataViewModel>();
   const [loading, setLoading] = useState(false);
 
   const handleSearch = useCallback(async (searchString: string) => {
     setLoading(true);
-    setUserId(undefined);
     setRunData(undefined);
 
     const user = await remote.speedrun.getUser(searchString);
     const userId = user?.data?.id;
 
     if (userId) {
-      setUserId(userId);
       const pbs = await remote.speedrun.getUserPersonalBests(userId);
       const mappedRunData = mapData(pbs, userId);
       setRunData(mappedRunData);
@@ -154,10 +149,9 @@ const useStateForApp = () => {
 
   return useMemo(() => ({
     handleSearch,
-    userId,
     runData,
     loading,
-  }), [handleSearch, userId, runData, loading]);
+  }), [handleSearch, runData, loading]);
 };
 
 export type RunDataViewModel = {

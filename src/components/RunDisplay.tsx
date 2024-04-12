@@ -51,6 +51,9 @@ export const RunDisplay = ({ runData, loading }: {
       <Table stickyHeader size="small" aria-label="collapsible table" sx={styles.table}>
         <TableHead>
           <TableRow>
+            <TableCell align="center" colSpan={3}>Total Games Run: {runData?.games?.length ?? "none"}</TableCell>
+          </TableRow>
+          <TableRow>
             <TableCell />
             <TableCell align="left">Game</TableCell>
             <TableCell align="right">Categories Run</TableCell>
