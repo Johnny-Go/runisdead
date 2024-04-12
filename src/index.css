@@ -1,3 +1,8 @@
+html {
+  /*prevents vertical scroll bar from shifting the content*/
+  padding-left: calc(100vw - 100%);
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
