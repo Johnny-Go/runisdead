@@ -47,8 +47,8 @@ export const RunDisplay = ({ runData }: {
     const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - runData?.games?.length) : 0;
 
     return (
-      <TableContainer component={Paper}>
-        <Table aria-label="collapsible table">
+      <TableContainer component={Paper} style={{ maxHeight: "75vh" }}>
+        <Table stickyHeader aria-label="collapsible table" >
           <TableHead>
             <TableRow>
               <TableCell />
