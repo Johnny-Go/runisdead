@@ -164,7 +164,7 @@ export type PersonalBestDataViewModel = {
   categoryLookup: Map<string, CategoryDataViewModel>;
   subcategoryLookup: Map<string, SubcategoryDataViewModel>;
   runsByGameId: Map<string, RunDataViewModel[]>;
-}
+};
 
 export type GameDataViewModel = {
   gameId: string;
@@ -187,7 +187,7 @@ export type SubcategoryDataViewModel = {
 export type SubcategoryValueDataViewModel = {
   subcategoryValueId: string;
   subcategoryValueName: string;
-}
+};
 
 export type RunDataViewModel = {
   runId: string;
@@ -208,4 +208,4 @@ export type RunDataViewModel = {
 type RunSubcategoryDataViewModel = {
   subcategoryId: string;
   subcategoryValueId: string;
-}
+};

@@ -101,7 +101,7 @@ const CategoryRow = ({ userId, game, runs, categories, subcategories }: {
 }) => {
   const [open, setOpen] = useState<boolean>(false);
 
-  // we need to get every category + sub categories combination here
+  //we need to get every category + sub categories combination here
   /* for example:
     No Subcategories:   MMX: Any%; 100%; etc
     One Subcategory:    GCM: Any% + Easy; Co-op + Easy; etc
@@ -137,8 +137,8 @@ const CategoryRow = ({ userId, game, runs, categories, subcategories }: {
     //some code to filter out older runs because the /personal-bests endpoint includes old runs sometimes
     const checkId = category?.categoryId + "," + subcategoryValueIds;
     const checkRowData = rowDataMap.get(checkId);
-    if(checkRowData) {
-      if(rowData.time > checkRowData.time) {
+    if (checkRowData) {
+      if (rowData.time > checkRowData.time) {
         return;
       }
     }
@@ -165,7 +165,7 @@ const CategoryRow = ({ userId, game, runs, categories, subcategories }: {
       </TableRow>
       <TableRow>
         <TableCell sx={styles.tableCell.noTopBottomPadding} colSpan={3}>
-          <Collapse in={open} timeout="auto" unmountOnExit>
+          <Collapse in={open} timeout="auto">
             <Box sx={styles.box}>
               <Typography variant="h6" gutterBottom component="div">
                 Categories
@@ -199,24 +199,24 @@ const HistoryRow = ({ userId, gameId, rowData }: {
   rowData: RunRowData;
 }) => {
   const [open, setOpen] = useState<boolean>(false);
-  const [runHistoryData, setRunHistoryData] = useState<RunRowData[]>();
+  const [runHistoryData, setRunHistoryData] = useState<RunHistoryRowData[]>();
 
   const handleExpand = useCallback(async (userId: string, gameId: string, categoryId: string) => {
     setOpen(!open);
 
     console.log(runHistoryData);
     //don't hit the API repeatedly once we have data
-    if(runHistoryData) {
+    if (runHistoryData) {
       return;
     }
 
     const runHistory = await remote.speedrun.getUserRunHistory(userId, gameId, categoryId);
     
-    const runHistoryArray: RunRowData[] = [];
-    // parse run history here, need to make sure we get the correct subcategories for runs, then sort by best time first
+    const runHistoryArray: RunHistoryRowData[] = [];
+    //parse run history here, need to make sure we get the correct subcategories for runs, then sort by best time first
     runHistory.forEach((run) => {
       //don't include ILs, this probably isn't necessary because we get run by category, but it can't hurt either
-      if(run.level) {
+      if (run.level) {
         return;
       }
 
@@ -258,7 +258,7 @@ const HistoryRow = ({ userId, gameId, rowData }: {
         const subcategoryData = mappedSubcategoriesBySubcategoryId.get(subcategory.subcategoryId);
         const subcategoryValue = subcategoryData?.subcategoryValues.get(subcategory.subcategoryValueId);
 
-        if(subcategoryValue) {
+        if (subcategoryValue) {
           subcategoryValueList.push(subcategoryValue);
         }
       });
@@ -330,18 +330,24 @@ const HistoryRow = ({ userId, gameId, rowData }: {
   );
 };
 
-type RunRowData = {
+type BaseRunRowData = {
   runId: string;
   runUrl: string;
-  place?: number;
-  date?: string;
-  status?: string;
   time: number;
   categoryId: string;
   categoryName: string;
   subcategoryValueIds: string;
   subcategoryValueNames: string;
 };
+
+type RunRowData = {
+  place: number;
+} & BaseRunRowData;
+
+type RunHistoryRowData = {
+  date: string;
+  status: string;
+} & BaseRunRowData;
 
 const convertSecondsToTime = (numSeconds: number): string => {
   let workingVar = (numSeconds * 1000);

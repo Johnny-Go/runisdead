@@ -14,7 +14,7 @@ export const remote = {
       const response = await get<RunsViewModel>(`https://www.speedrun.com/api/v1/runs?user=${userId}&game=${gameId}&category=${categoryId}&embed=category.variables&max=200`);
       return response.data;
     },
-  }
+  },
 };
 
 const get = async <TModel extends object>(url: string) => {
@@ -88,7 +88,7 @@ type CategoryViewModel = {
       ];
     };
   };
-}
+};
 
 type RunsViewModel = {
   data: RunViewModel[];
