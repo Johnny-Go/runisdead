@@ -10,7 +10,6 @@ export const remote = {
       return response.data;
     },
     getUserRunHistory: async (userId: string, gameId: string, categoryId: string) => { /* https://github.com/speedruncomorg/api/blob/master/version1/runs.md#get-runs */
-      console.log("test");
       const response = await get<RunsViewModel>(`https://www.speedrun.com/api/v1/runs?user=${userId}&game=${gameId}&category=${categoryId}&embed=category.variables&max=200`);
       return response.data;
     },

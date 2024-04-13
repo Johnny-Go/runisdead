@@ -199,15 +199,17 @@ const HistoryRow = ({ userId, gameId, rowData }: {
   rowData: RunRowData;
 }) => {
   const [open, setOpen] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [runHistoryData, setRunHistoryData] = useState<RunHistoryRowData[]>();
 
   const handleExpand = useCallback(async (userId: string, gameId: string, categoryId: string) => {
     setOpen(!open);
 
-    console.log(runHistoryData);
     //don't hit the API repeatedly once we have data
     if (runHistoryData) {
       return;
+    } else {
+      setLoading(true);
     }
 
     const runHistory = await remote.speedrun.getUserRunHistory(userId, gameId, categoryId);
@@ -263,21 +265,23 @@ const HistoryRow = ({ userId, gameId, rowData }: {
         }
       });
 
-      runHistoryArray.push({
-        runId: run.id,
-        runUrl: run.weblink,
-        time: run.times.primary_t,
-        status: run.status.status,
-        date: run.date,
-        categoryId: run.category.data.id,
-        categoryName: run.category.data.name,
-        subcategoryValueIds: subcategoryValueList?.map((s) => s.subcategoryValueId).join(),
-        subcategoryValueNames: subcategoryValueList?.map((s) => s.subcategoryValueName).join(", ")
-      });
+      const runSubCategoryValueIds = subcategoryValueList?.map((s) => s.subcategoryValueId).join();
+      if (rowData.subcategoryValueIds === runSubCategoryValueIds) {
+        runHistoryArray.push({
+          runId: run.id,
+          runUrl: run.weblink,
+          time: run.times.primary_t,
+          status: run.status.status,
+          date: run.date,
+          categoryId: run.category.data.id,
+          categoryName: run.category.data.name,
+        });
+      }
     });
 
     setRunHistoryData(runHistoryArray.sort((a,b) => a.time - b.time));
-  }, [open, runHistoryData]);
+    setLoading(false);
+  }, [open, rowData, runHistoryData]);
 
   return (
     <React.Fragment key={`${rowData.runId}`}>
@@ -297,35 +301,42 @@ const HistoryRow = ({ userId, gameId, rowData }: {
         </TableCell>
         <TableCell align="right" sx={styles.tableCell.noBottomBorder}>{rowData.place}</TableCell>
       </TableRow>
-      <TableRow key={"history"}>
-        <TableCell sx={styles.tableCell.noTopBottomPadding} colSpan={4}>
-          <Collapse in={open} timeout="auto">
-            <Box sx={styles.box}>
-              <Typography variant="h6" gutterBottom component="div">
-                History
-              </Typography>
-              <Table size="small" aria-label="runs">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Date</TableCell>
-                    <TableCell align="right">Time</TableCell>
-                    <TableCell align="right">Status</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {runHistoryData?.map((row) => (
-                    <TableRow key={row.runId}>
-                      <TableCell>{row.date}</TableCell>
-                      <TableCell align="right"><a href={row.runUrl} target="_blank">{convertSecondsToTime(row.time)}</a></TableCell>
-                      <TableCell align="right">{capitalizeFirstLetter(row.status ?? "")}</TableCell>
+      {(loading)
+        ? <TableRow sx={styles.tableRow}>
+            <TableCell align="center" colSpan={3}>
+              <CircularProgress />
+            </TableCell>
+          </TableRow>
+        : <TableRow key={"history"}>
+          <TableCell sx={styles.tableCell.noTopBottomPadding} colSpan={4}>
+            <Collapse in={open} timeout="auto">
+              <Box sx={styles.box}>
+                <Typography variant="h6" gutterBottom component="div">
+                  History
+                </Typography>
+                <Table size="small" aria-label="runs">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Date</TableCell>
+                      <TableCell align="right">Time</TableCell>
+                      <TableCell align="right">Status</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Box>
-          </Collapse>
-        </TableCell>
-      </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {runHistoryData?.map((row) => (
+                      <TableRow key={row.runId}>
+                        <TableCell>{row.date}</TableCell>
+                        <TableCell align="right"><a href={row.runUrl} target="_blank">{convertSecondsToTime(row.time)}</a></TableCell>
+                        <TableCell align="right">{capitalizeFirstLetter(row.status ?? "")}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Box>
+            </Collapse>
+          </TableCell>
+        </TableRow>
+      }
     </React.Fragment>
   );
 };
@@ -336,12 +347,12 @@ type BaseRunRowData = {
   time: number;
   categoryId: string;
   categoryName: string;
-  subcategoryValueIds: string;
-  subcategoryValueNames: string;
 };
 
 type RunRowData = {
   place: number;
+  subcategoryValueIds: string;
+  subcategoryValueNames: string;
 } & BaseRunRowData;
 
 type RunHistoryRowData = {
