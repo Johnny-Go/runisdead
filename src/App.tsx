@@ -8,7 +8,7 @@ import { RunDisplay } from "./components/RunDisplay.tsx";
 import { remote, PersonalBestViewModel } from "./remote.ts";
 
 export const App = () => {
-  const { handleSearch, runData, loading } = useStateForApp();
+  const { handleSearch, userId, runData, loading } = useStateForApp();
 
   return (
     <>
@@ -22,22 +22,25 @@ export const App = () => {
         />
       </div>
       <div>
-        <RunDisplay runData={runData} loading={loading}/>
+        <RunDisplay userId={userId} runData={runData} loading={loading}/>
       </div>
     </>
   );
 };
 
 const useStateForApp = () => {
-  const [runData, setRunData] = useState<RunDataViewModel>();
-  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<string>("");
+  const [runData, setRunData] = useState<PersonalBestDataViewModel>();
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleSearch = useCallback(async (searchString: string) => {
     setLoading(true);
+    setUserId("")
     setRunData(undefined);
 
     const user = await remote.speedrun.getUser(searchString);
     const userId = user?.data?.id;
+    setUserId(userId);
 
     if (userId) {
       const pbs = await remote.speedrun.getUserPersonalBests(userId);
@@ -51,15 +54,15 @@ const useStateForApp = () => {
   const mapData = (
     personalBests: PersonalBestViewModel[],
     userIdParam: string
-  ): RunDataViewModel => {
-    const mappedGamesByGameId = new Map<string, GameViewModel>();
-    const mappedRunsByGameId = new Map<string, RunViewModel[]>();
-    const mappedCategoriesByCategoryId = new Map<string, CategoryViewModel>();
-    const mappedSubcategoriesBySubcategoryId = new Map<string, SubcategoryViewModel>();
+  ): PersonalBestDataViewModel => {
+    const mappedGamesByGameId = new Map<string, GameDataViewModel>();
+    const mappedRunsByGameId = new Map<string, RunDataViewModel[]>();
+    const mappedCategoriesByCategoryId = new Map<string, CategoryDataViewModel>();
+    const mappedSubcategoriesBySubcategoryId = new Map<string, SubcategoryDataViewModel>();
 
     personalBests.forEach((personalBest) => {
       //don't include ILs
-      if(personalBest.run.level) {
+      if (personalBest.run.level) {
         return;
       }
 
@@ -79,7 +82,7 @@ const useStateForApp = () => {
       //get subcategories for each category, as well as their values
       categoryData.variables.data.forEach((subcategory) => {
         if (subcategory["is-subcategory"] === true) {
-          const subcategoryValuesMap = new Map<string, SubcategoryValueViewModel>();
+          const subcategoryValuesMap = new Map<string, SubcategoryValueDataViewModel>();
           //lol this JSON, why isn't this an array?
           for (const [key, value] of Object.entries(subcategory.values.values)) {
             subcategoryValuesMap.set(key, {
@@ -149,43 +152,44 @@ const useStateForApp = () => {
 
   return useMemo(() => ({
     handleSearch,
+    userId,
     runData,
     loading,
-  }), [handleSearch, runData, loading]);
+  }), [handleSearch, userId, runData, loading]);
 };
 
-export type RunDataViewModel = {
-  games: GameViewModel[];
-  gameLookup: Map<string, GameViewModel>;
-  categoryLookup: Map<string, CategoryViewModel>;
-  subcategoryLookup: Map<string, SubcategoryViewModel>;
-  runsByGameId: Map<string, RunViewModel[]>;
+export type PersonalBestDataViewModel = {
+  games: GameDataViewModel[];
+  gameLookup: Map<string, GameDataViewModel>;
+  categoryLookup: Map<string, CategoryDataViewModel>;
+  subcategoryLookup: Map<string, SubcategoryDataViewModel>;
+  runsByGameId: Map<string, RunDataViewModel[]>;
 }
 
-export type GameViewModel = {
+export type GameDataViewModel = {
   gameId: string;
   gameName: string;
   gameUrl: string;
 };
 
-export type CategoryViewModel = {
+export type CategoryDataViewModel = {
   categoryId: string;
   categoryName: string;
   gameId: string;
 };
 
-export type SubcategoryViewModel = {
+export type SubcategoryDataViewModel = {
   subcategoryId: string;
   subcategoryName: string;
-  subcategoryValues: Map<string, SubcategoryValueViewModel>;
+  subcategoryValues: Map<string, SubcategoryValueDataViewModel>;
 };
 
-export type SubcategoryValueViewModel = {
+export type SubcategoryValueDataViewModel = {
   subcategoryValueId: string;
   subcategoryValueName: string;
 }
 
-export type RunViewModel = {
+export type RunDataViewModel = {
   runId: string;
   gameId: string;
   categoryId: string;
@@ -198,10 +202,10 @@ export type RunViewModel = {
     realTimeNoLoads: number;
     inGameTime: number;
   };
-  subcategories: RunSubcategoryViewModel[];
+  subcategories: RunSubcategoryDataViewModel[];
 };
 
-type RunSubcategoryViewModel = {
+type RunSubcategoryDataViewModel = {
   subcategoryId: string;
   subcategoryValueId: string;
 }

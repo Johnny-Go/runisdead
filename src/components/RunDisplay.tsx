@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 
-import { CategoryViewModel, GameViewModel, RunDataViewModel, RunViewModel, SubcategoryValueViewModel, SubcategoryViewModel } from "../App";
+import { CategoryDataViewModel, GameDataViewModel, PersonalBestDataViewModel, RunDataViewModel, SubcategoryValueDataViewModel, SubcategoryDataViewModel } from "../App";
+import { remote } from "../remote";
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
 import IconButton from "@mui/material/IconButton";
@@ -42,9 +43,10 @@ const styles = {
   },
 };
 
-export const RunDisplay = ({ runData, loading }: {
-    runData?: RunDataViewModel;
-    loading: boolean;
+export const RunDisplay = ({ userId, runData, loading }: {
+  userId: string;
+  runData?: PersonalBestDataViewModel;
+  loading: boolean;
 }) => {
   return (
     <TableContainer component={Paper} sx={styles.tableContainer}>
@@ -71,7 +73,8 @@ export const RunDisplay = ({ runData, loading }: {
               ?
                 runData.games.map((game) => (
                   <CategoryRow 
-                    key={game.gameId}
+                    key={`${userId}-${game.gameId}`}
+                    userId={userId}
                     game={game}
                     runs={runData.runsByGameId.get(game.gameId) ?? []}
                     categories={runData.categoryLookup}
@@ -89,13 +92,14 @@ export const RunDisplay = ({ runData, loading }: {
   );
 };
 
-const CategoryRow = ({ game, runs, categories, subcategories }: {
-  game: GameViewModel;
-  runs: RunViewModel[];
-  categories: Map<string, CategoryViewModel>;
-  subcategories: Map<string, SubcategoryViewModel>;
+const CategoryRow = ({ userId, game, runs, categories, subcategories }: {
+  userId: string;
+  game: GameDataViewModel;
+  runs: RunDataViewModel[];
+  categories: Map<string, CategoryDataViewModel>;
+  subcategories: Map<string, SubcategoryDataViewModel>;
 }) => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<boolean>(false);
 
   // we need to get every category + sub categories combination here
   /* for example:
@@ -105,10 +109,10 @@ const CategoryRow = ({ game, runs, categories, subcategories }: {
     etc
   */
 
-  const rowDataMap = new Map<string, RowData>();
+  const rowDataMap = new Map<string, RunRowData>();
   runs.forEach((run) => {
     const category = categories.get(run.categoryId);
-    const subcategoryValueList: SubcategoryValueViewModel[] = [];
+    const subcategoryValueList: SubcategoryValueDataViewModel[] = [];
     run.subcategories.forEach((subcategory) => {
       const subcategoryData = subcategories.get(subcategory.subcategoryId);
       const subcategoryValue = subcategoryData?.subcategoryValues.get(subcategory.subcategoryValueId);
@@ -119,7 +123,7 @@ const CategoryRow = ({ game, runs, categories, subcategories }: {
     });
 
     const subcategoryValueIds = subcategoryValueList?.map((s) => s.subcategoryValueId).join()
-    const rowData: RowData = {
+    const rowData: RunRowData = {
       runId: run.runId,
       runUrl: run.runUrl,
       place: run.place,
@@ -131,7 +135,7 @@ const CategoryRow = ({ game, runs, categories, subcategories }: {
     };
 
     //some code to filter out older runs because the /personal-bests endpoint includes old runs sometimes
-    const checkId = category?.categoryId + "," + subcategoryValueList?.map((s) => s.subcategoryValueId).join();
+    const checkId = category?.categoryId + "," + subcategoryValueIds;
     const checkRowData = rowDataMap.get(checkId);
     if(checkRowData) {
       if(rowData.time > checkRowData.time) {
@@ -169,6 +173,7 @@ const CategoryRow = ({ game, runs, categories, subcategories }: {
               <Table size="small" aria-label="runs">
                 <TableHead>
                   <TableRow>
+                    <TableCell />
                     <TableCell>Category</TableCell>
                     <TableCell align="right">Time</TableCell>
                     <TableCell align="right">Place</TableCell>
@@ -176,12 +181,143 @@ const CategoryRow = ({ game, runs, categories, subcategories }: {
                 </TableHead>
                 <TableBody>
                   {sortedRowData.map((row) => (
-                    <TableRow key={`${row.runId}`} sx={styles.tableRow}>
-                      <TableCell component="th" scope="row">{`${row.categoryName}${row.subcategoryValueNames ? ": " + row.subcategoryValueNames : ""}`}</TableCell>
-                      <TableCell align="right">
-                        <a href={row.runUrl} target="_blank">{convertSecondsToTime(row.time)}</a>
-                      </TableCell>
-                      <TableCell align="right">{row.place}</TableCell>
+                    <HistoryRow key={`history-${row.runId}`} userId={userId} gameId={game.gameId} rowData={row} />
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </React.Fragment>
+  );
+};
+
+const HistoryRow = ({ userId, gameId, rowData }: {
+  userId: string;
+  gameId: string;
+  rowData: RunRowData;
+}) => {
+  const [open, setOpen] = useState<boolean>(false);
+  const [runHistoryData, setRunHistoryData] = useState<RunRowData[]>();
+
+  const handleExpand = useCallback(async (userId: string, gameId: string, categoryId: string) => {
+    setOpen(!open);
+
+    console.log(runHistoryData);
+    //don't hit the API repeatedly once we have data
+    if(runHistoryData) {
+      return;
+    }
+
+    const runHistory = await remote.speedrun.getUserRunHistory(userId, gameId, categoryId);
+    
+    const runHistoryArray: RunRowData[] = [];
+    // parse run history here, need to make sure we get the correct subcategories for runs, then sort by best time first
+    runHistory.forEach((run) => {
+      //don't include ILs, this probably isn't necessary because we get run by category, but it can't hurt either
+      if(run.level) {
+        return;
+      }
+
+      //get subcategories for each category, as well as their values
+      const mappedSubcategoriesBySubcategoryId = new Map<string, SubcategoryDataViewModel>();
+      run.category.data.variables.data.forEach((subcategory) => {
+        if (subcategory["is-subcategory"] === true) {
+          const subcategoryValuesMap = new Map<string, SubcategoryValueDataViewModel>();
+          //lol this JSON, why isn't this an array?
+          for (const [key, value] of Object.entries(subcategory.values.values)) {
+            subcategoryValuesMap.set(key, {
+              subcategoryValueId: key,
+              subcategoryValueName: value.label,
+            });
+          }
+
+          mappedSubcategoriesBySubcategoryId.set(subcategory.id, {
+              subcategoryId: subcategory.id,
+              subcategoryName: subcategory.name,
+              subcategoryValues: subcategoryValuesMap,
+          });
+        }
+      });
+
+      //get the subcategories for the run
+      const runSubcategories = [];
+      for (const [key, value] of Object.entries(run.values)) {
+        if (mappedSubcategoriesBySubcategoryId.get(key)) {
+          runSubcategories.push({
+            subcategoryId: key,
+            subcategoryValueId: value,
+          });
+        }
+      }
+
+      //map run subcategory values
+      const subcategoryValueList: SubcategoryValueDataViewModel[] = [];
+      runSubcategories.forEach((subcategory) => {
+        const subcategoryData = mappedSubcategoriesBySubcategoryId.get(subcategory.subcategoryId);
+        const subcategoryValue = subcategoryData?.subcategoryValues.get(subcategory.subcategoryValueId);
+
+        if(subcategoryValue) {
+          subcategoryValueList.push(subcategoryValue);
+        }
+      });
+
+      runHistoryArray.push({
+        runId: run.id,
+        runUrl: run.weblink,
+        time: run.times.primary_t,
+        status: run.status.status,
+        date: run.date,
+        categoryId: run.category.data.id,
+        categoryName: run.category.data.name,
+        subcategoryValueIds: subcategoryValueList?.map((s) => s.subcategoryValueId).join(),
+        subcategoryValueNames: subcategoryValueList?.map((s) => s.subcategoryValueName).join(", ")
+      });
+    });
+
+    setRunHistoryData(runHistoryArray.sort((a,b) => a.time - b.time));
+  }, [open, runHistoryData]);
+
+  return (
+    <React.Fragment key={`${rowData.runId}`}>
+      <TableRow key={`${rowData.runId}`} sx={styles.tableRow}>
+        <TableCell sx={styles.tableCell.noBottomBorder}>
+          <IconButton
+            aria-label="expand row"
+            size="small"
+            onClick={() => handleExpand(userId, gameId, rowData.categoryId)}
+          >
+            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+          </IconButton>
+        </TableCell>
+        <TableCell component="th" scope="row" sx={styles.tableCell.noBottomBorder}>{`${rowData.categoryName}${rowData.subcategoryValueNames ? ": " + rowData.subcategoryValueNames : ""}`}</TableCell>
+        <TableCell align="right" sx={styles.tableCell.noBottomBorder}>
+          <a href={rowData.runUrl} target="_blank">{convertSecondsToTime(rowData.time)}</a>
+        </TableCell>
+        <TableCell align="right" sx={styles.tableCell.noBottomBorder}>{rowData.place}</TableCell>
+      </TableRow>
+      <TableRow key={"history"}>
+        <TableCell sx={styles.tableCell.noTopBottomPadding} colSpan={4}>
+          <Collapse in={open} timeout="auto">
+            <Box sx={styles.box}>
+              <Typography variant="h6" gutterBottom component="div">
+                History
+              </Typography>
+              <Table size="small" aria-label="runs">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell align="right">Time</TableCell>
+                    <TableCell align="right">Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {runHistoryData?.map((row) => (
+                    <TableRow key={row.runId}>
+                      <TableCell>{row.date}</TableCell>
+                      <TableCell align="right"><a href={row.runUrl} target="_blank">{convertSecondsToTime(row.time)}</a></TableCell>
+                      <TableCell align="right">{capitalizeFirstLetter(row.status ?? "")}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -194,10 +330,12 @@ const CategoryRow = ({ game, runs, categories, subcategories }: {
   );
 };
 
-type RowData = {
+type RunRowData = {
   runId: string;
   runUrl: string;
-  place: number;
+  place?: number;
+  date?: string;
+  status?: string;
   time: number;
   categoryId: string;
   categoryName: string;
@@ -224,4 +362,8 @@ const convertSecondsToTime = (numSeconds: number): string => {
     s > 0 ? `${s}s` : (d > 0 || h > 0 || m > 0) && s === 0 ? "0s" : [],
     ms > 0 ? `${ms}ms` : [],
   ].join(" ");
+};
+
+const capitalizeFirstLetter = (word: string): string => {
+  return word.charAt(0).toUpperCase() + word.slice(1);
 };
