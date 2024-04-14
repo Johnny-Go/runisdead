@@ -4,7 +4,7 @@ import "./App.css";
 import runisdead from "./assets/runisdead.png";
 import { Image } from "./components/Image";
 import { SearchBar } from "./components/SearchBar";
-import { RunDisplay } from "./components/RunDisplay.tsx";
+import { RunDisplay } from "./components/RunDisplay/RunDisplay.tsx";
 import { remote, PersonalBestViewModel } from "./remote.ts";
 
 export const App = () => {
