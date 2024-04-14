@@ -16,6 +16,7 @@ import Paper from "@mui/material/Paper";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import CircularProgress from '@mui/material/CircularProgress';
+import Tooltip from '@mui/material/Tooltip';
 
 const styles = {
   tableContainer: {
@@ -40,7 +41,7 @@ const styles = {
   },
   box: {
     margin: 1
-  },
+  }
 };
 
 export const RunDisplay = ({ userId, runData, loading }: {
@@ -272,6 +273,7 @@ const HistoryRow = ({ userId, gameId, rowData }: {
           runUrl: run.weblink,
           time: run.times.primary_t,
           status: run.status.status,
+          reason: run.status.reason,
           date: run.date,
           categoryId: run.category.data.id,
           categoryName: run.category.data.name,
@@ -327,7 +329,14 @@ const HistoryRow = ({ userId, gameId, rowData }: {
                       <TableRow key={row.runId}>
                         <TableCell>{row.date}</TableCell>
                         <TableCell align="right"><a href={row.runUrl} target="_blank">{convertSecondsToTime(row.time)}</a></TableCell>
-                        <TableCell align="right">{capitalizeFirstLetter(row.status ?? "")}</TableCell>
+                        <TableCell align="right">
+                          {(row.reason)
+                            ? <Tooltip title={row.reason}>
+                                <u className="dotted">{capitalizeFirstLetter(row.status ?? "")}</u>
+                              </Tooltip>
+                            : capitalizeFirstLetter(row.status ?? "")
+                          }
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -358,6 +367,7 @@ type RunRowData = {
 type RunHistoryRowData = {
   date: string;
   status: string;
+  reason?: string;
 } & BaseRunRowData;
 
 const convertSecondsToTime = (numSeconds: number): string => {

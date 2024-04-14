@@ -8,3 +8,8 @@
 .bottomPadding {
   padding-bottom: 1em;
 }
+
+u.dotted{
+  border-bottom: 1px dashed #999;
+  text-decoration: none; 
+}
